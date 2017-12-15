@@ -17,8 +17,15 @@ class RuuviStreamr {
 		this.tags = tags
 		this.url = url
 
-		// This object will cache the stream ids for the tags 
+		// This object will cache the stream ids for the tags
 		this.streams = {}
+
+		// Set of tags we have already warned about, to avoid warning many times
+		this.warned = {}
+
+		// Set of tags we are currently creating, to avoid creating multiple times
+		this.creating = {}
+
 		this.start()
 	}
 
@@ -28,31 +35,31 @@ class RuuviStreamr {
 			console.log('Found tag: '+tag.id+ (this.tags[tag.id] ? ' ('+this.tags[tag.id].name+')' : ''))
 
 			tag.on('updated', async (data) => {
-				// Warn if the tag is not defined in tags.js
-				if (!this.tags[tag.id] || !this.tags[tag.id].name) {
-					console.log('Warning: Ignoring tag %s because it is not defined in the "tags" argument to RuuviStreamr(apiKey, tags): %s', tag.id, JSON.stringify(data, null, '\t'))
-				} else {
-					debug('%s: %s', this.tags[tag.id].name, JSON.stringify(data, null, '\t'))
+				// Warn once if the tag is not defined in tags.js
+				if ((!this.tags[tag.id] || !this.tags[tag.id].name)) {
+					if (!this.warned[tag.id]) {
+						console.log('Warning: Ignoring tag %s because it is not defined in the "tags" argument to RuuviStreamr(apiKey, tags): %s', tag.id, JSON.stringify(data, null, '\t'))
+						this.warned[tag.id] = true
+					}
+					return
 				}
 
-				if (this.tags[tag.id] && this.tags[tag.id].name) {
-					let tagDef = this.tags[tag.id]
+				let tagDef = this.tags[tag.id]
+				debug('%s: %s', tagDef.name, JSON.stringify(data, null, '\t'))
+				try {
+					let stream = await this.getOrCreateStream(tagDef.name, tagDef.description)
+					await this.produceToStream(stream.id, data)
 
-					try {
-						let stream = await this.getOrCreateStream(tagDef.name, tagDef.description)
-						await this.produceToStream(this.streams[tagDef.name].id, data)
-
-						if (!this.streams[tagDef.name].config.fields || !this.streams[tagDef.name].config.fields.length) {
-							try {
-								this.streams[tagDef.name] = await this.detectFields(this.streams[tagDef.name].id)
-								this.updateStream(this.streams[tagDef.name])
-							} catch (err) {
-								// ignore
-							}
+					if (!stream.config.fields || !stream.config.fields.length) {
+						try {
+							this.streams[tagDef.name] = await this.detectFields(this.streams[tagDef.name].id)
+							this.updateStream(this.streams[tagDef.name])
+						} catch (err) {
+							// ignore
 						}
-					} catch (err) {
-						console.error(err)
 					}
+				} catch (err) {
+					console.error(err)
 				}
 			})
 		})
@@ -70,10 +77,15 @@ class RuuviStreamr {
 	}
 
 	async createStream(name, description) {
-		return await this.authFetch(this.url + '/streams', { 
-			method: 'POST',
-			body: JSON.stringify({name, description})
-		})
+		this.creating[name] = true
+		try {
+			return await this.authFetch(this.url + '/streams', {
+				method: 'POST',
+				body: JSON.stringify({name, description})
+			})
+		} finally {
+			delete this.creating[name]
+		}
 	}
 
 	async updateStream(stream) {
@@ -86,15 +98,16 @@ class RuuviStreamr {
 	async getOrCreateStream(name, description) {
 		// Try cache first
 		if (this.streams[name]) {
-			return name
+			return this.streams[name]
 		}
 
 		// Then try looking up the stream
 		this.streams[name] = await this.getStreamByName(name)
 		
 		// If not found, try creating the stream
-		if (!this.streams[name]) {
+		if (!this.streams[name] && !this.creating[name]) {
 			this.streams[name] = await this.createStream(name, description)
+			console.log('Created stream: %s (%s)', name, this.streams[name].id)
 		}
 
 		// If still nothing, throw
