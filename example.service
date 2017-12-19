@@ -1,0 +1,11 @@
+ [Unit]
+ Description=Example Ruuvi-Streamr Service
+ After=multi-user.target
+
+ [Service]
+ Type=idle
+ ExecStart=/home/pi/.nvm/versions/node/v8.9.3/bin/node /home/pi/ruuvi-streamr/example.js > /home/pi/ruuvi-streamr/example.log 2>&1
+ Restart=always
+
+ [Install]
+ WantedBy=multi-user.target
