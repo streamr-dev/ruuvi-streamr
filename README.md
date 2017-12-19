@@ -45,3 +45,16 @@ const tags = {
 // Start!
 let rs = new RuuviStreamr(apiKey, tags)
 ```
+
+## Tips for Raspberry Pi
+
+Our demos are powered by a Raspberry Pi 3 running Raspbian Linux. The library should also run fine on at least macOS, on which it has been developed.
+
+On the Raspberry Pi, we had to give the following commands to enable listening to Bluetooth as a non-root user:
+
+```
+sudo apt-get install libcap2-bin
+sudo setcap cap_net_raw+eip $(eval readlink -f `which node`)
+```
+
+In this repository there is also an [example systemd service config](https://github.com/streamr-dev/ruuvi-streamr/blob/master/example.service), which helps set the node process run automatically on boot.
