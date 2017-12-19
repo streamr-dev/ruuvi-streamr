@@ -48,7 +48,7 @@ let rs = new RuuviStreamr(apiKey, tags)
 
 ## Tips for Raspberry Pi
 
-Our demos are powered by a Raspberry Pi 3 running Raspbian Linux. The library should also run fine on at least macOS, on which it has been developed.
+Our RuuviTag demo streams are powered by a Raspberry Pi 3 running Raspbian Linux. The library should also run fine on at least macOS, on which it has been developed.
 
 On the Raspberry Pi, we had to give the following commands to enable listening to Bluetooth as a non-root user:
 
