@@ -44,10 +44,10 @@ class RuuviStreamr {
 					return
 				}
 
-				let tagDef = this.tags[tag.id]
+				const tagDef = this.tags[tag.id]
 				debug('%s: %s', tagDef.name, JSON.stringify(data, null, '\t'))
 				try {
-					let stream = await this.getOrCreateStream(tagDef.name, tagDef.description)
+					const stream = await this.getOrCreateStream(tagDef.name, tagDef.description)
 					await this.produceToStream(stream.id, data)
 
 					if (!stream.config.fields || !stream.config.fields.length) {
@@ -68,11 +68,11 @@ class RuuviStreamr {
 	}
 
 	async getStreamByName(name) {
-		let url = this.url + '/streams?' + querystring.stringify({
+		const url = this.url + '/streams?' + querystring.stringify({
 			name: name,
 			public: false
 		})
-		let json = await this.authFetch(url)
+        const json = await this.authFetch(url)
 		return json[0]
 	}
 
@@ -120,21 +120,21 @@ class RuuviStreamr {
 
 	async produceToStream(streamId, data) {
 		// Send data to the stream
-		return await this.authFetch(this.url + '/streams/' + streamId + '/data', { 
+		return await this.authFetch(this.url + '/streams/' + streamId + '/data', {
 			method: 'POST',
 			body: JSON.stringify(data)
 		})
 	}
 
 	async authFetch(url, opts = {}) {
-		let res = await fetch(url, {
+		const res = await fetch(url, {
 			headers: {
 				Authorization: 'token '+this.apiKey
 			},
 			...opts
 		})
 
-		let text = await res.text()
+		const text = await res.text()
 
 		if (res.ok && text.length) {
 			try {
