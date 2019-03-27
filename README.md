@@ -43,7 +43,7 @@ const tags = {
 }
 
 // Start!
-let rs = new RuuviStreamr(apiKey, tags)
+new RuuviStreamr(apiKey, tags)
 ```
 
 ## Tips for Raspberry Pi

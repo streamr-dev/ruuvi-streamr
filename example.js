@@ -24,4 +24,4 @@ const tags = {
 	}
 }
 
-let rs = new RuuviStreamr(apiKey, tags)
+new RuuviStreamr(apiKey, tags)
